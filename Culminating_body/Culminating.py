@@ -4,6 +4,7 @@ from PIL import Image
 app=CTk()
 app.attributes("-fullscreen", True)
 set_appearance_mode("system")
+betAmount=0
 y=1
 
 def clear_screen():
@@ -59,11 +60,6 @@ class Start_Screen(CTkFrame):
         shopLabel.place(x=100,y=500)
         pywinstyles.set_opacity(shopLabel, 0.7, color="#000001")
 #play screen 
-
-def image_animation(image_idle, image_press, button):
-    button.configure(image=image_press)
-    button.after(100, lambda: button.configure(image=image_idle))
-
 class Bet_Screen(CTkFrame):
     def __init__(self, master):
         super().__init__(master)
@@ -113,9 +109,7 @@ class Bet_Screen(CTkFrame):
         containerLabel = CTkLabel(self, text='',image=self.spritecontainer, bg_color='#000001', corner_radius=50)
         containerLabel.place(x=400, y=250)
         pywinstyles.set_opacity(containerLabel, 0.8, color="#000001")
-        addbet=CTkButton(self,text='',image=self.addbetImg, bg_color="#000001",fg_color="#000001", corner_radius=50,hover=False, command=lambda:image_animation(self.addbetImg,self.addbetImg2,addbet))
-        addbet.place(x=1400, y=650)
-        pywinstyles.set_opacity(addbet, 0.8, color="#000001")
+ 
         bet5=CTkButton(self,text='',image=self.button5, bg_color="#000001",fg_color="#000001", corner_radius=50,hover=False, command=lambda:image_animation(self.button5,self.button52,bet5))
         bet5.place(x=650, y=750)
         pywinstyles.set_opacity(bet5, 0.8, color="#000001")
@@ -128,13 +122,50 @@ class Bet_Screen(CTkFrame):
         accept=CTkButton(self,text='',image=self.acceptImg, bg_color="#000001",fg_color="#000001", corner_radius=50,hover=False, command=lambda:image_animation(self.acceptImg,self.acceptImg2,accept))
         accept.place(x=750, y=550)
         pywinstyles.set_opacity(accept, 0.8, color="#000001")
-        currentAddLabel=CTkLabel(self,text='', font=('PixelfySans', 40), text_color="white",bg_color="#000001",fg_color="#000001",width=600, height=200, corner_radius=80)
-        currentAddLabel.place(x=750, y=400)
-        pywinstyles.set_opacity(currentAddLabel, color="#000001")
         #Amount bet label
-        betLabel=CTkLabel(self, text='', font=('Sans', 50), text_color="white", bg_color="#000001", fg_color="#000001", width=600, height=200, corner_radius=80)
+        betLabel=CTkLabel(self, text=f'you are currently betting ${betAmount}', font=('Sans', 50), text_color="white", bg_color="#000001", fg_color="#000001", width=600, height=200, corner_radius=80)
         betLabel.place(x=650, y=400)
         pywinstyles.set_opacity(betLabel, color="#000001")
+        #function
+        def image_animation(image_idle, image_press, button):
+            button.configure(image=image_press)
+            button.after(100, lambda: button.configure(image=image_idle))
+            global betAmount
+            if button == subtractbet:
+                Current_Currency.add(betAmount)
+                betAmount = 0
+            elif button == bet5:
+                if Current_Currency.balance >= 5:
+                    betAmount +=5
+                    Current_Currency.subtract(5)
+            elif button == bet10:
+                if Current_Currency.balance >= 10:
+                    betAmount +=10
+                    Current_Currency.subtract(10)
+            elif button == bet100:
+                if Current_Currency.balance >= 100:
+                    betAmount +=100
+                    Current_Currency.subtract(100)
+            elif button == accept:
+                if betAmount > 0:
+                    Current_Currency.subtract(betAmount)
+                    clear_screen()
+                    Play_Screen(app, betAmount)
+            betLabel.configure(text=f"you are currently betting: ${betAmount}")
+            Currency_Label.configure(text=f"Currency: ${Current_Currency.balance}")
+
+#Play screen
+class Play_Screen(CTkFrame):
+    def __init__(self, master, betAmount):
+        super().__init__(master)
+        img = Image.open("Culminating Files/Background/betBackground.png")
+        self.betAmount = betAmount
+        self.img = CTkImage(img, size=(app.winfo_screenwidth(), app.winfo_screenheight())) 
+        self.pack(fill="both", expand=True)
+        backGround=CTkLabel(self, text="", image=self.img)
+        backGround.pack(fill="both", expand=True)
+    #labels
+
 
         
         
