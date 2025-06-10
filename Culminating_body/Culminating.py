@@ -64,7 +64,6 @@ class Start_Screen(CTkFrame):
         shopLabel.place(x=100, y=500)
         pywinstyles.set_opacity(shopLabel, 0.7, color="#000001")
 
-# Bet Screen
 class Bet_Screen(CTkFrame):
     def __init__(self, master):
         super().__init__(master)
@@ -121,9 +120,10 @@ class Bet_Screen(CTkFrame):
                 if self.betAmount > 0:
                     clear_screen()
                     Play_Screen(app, self.betAmount)
-
-            self.betLabel.configure(text=f"You are currently betting: ${self.betAmount}")
-            self.currency_label.configure(text=f"Current Balance: ${Current_Currency.balance}")
+            if self.betLabel.winfo_exists():
+                self.betLabel.configure(text=f"You are currently betting: ${self.betAmount}")
+            if self.currency_label.winfo_exists():
+                self.currency_label.configure(text=f"Current Balance: ${Current_Currency.balance}")
 
         # Buttons
         self.subtractbet = CTkButton(self, text='', image=self.subbetImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False, command=lambda: image_animation(self.subbetImg, self.subbetImg2, self.subtractbet))
@@ -160,10 +160,9 @@ class Play_Screen(CTkFrame):
         self.pack(fill="both", expand=True)
         self.betAmount = betAmount
         self.posx = 600  # Track card placement
-
+        self.playerCards = [] 
         # Card Deck
-        self.cardDeck = []
-
+        self.totalCardValue = 0
         # Images
         img = Image.open("Culminating Files/Background/betBackground.png")
         self.img = CTkImage(img, size=(app.winfo_screenwidth(), app.winfo_screenheight())) 
@@ -172,15 +171,26 @@ class Play_Screen(CTkFrame):
 
         # Load all card images into self.cardDeck
         self.cardDeck = [
-            CTkImage(Image.open(f"Culminating Files/Sprites/Card/{name}.png"), size=(800, 800))
+            (name, CTkImage(Image.open(f"Culminating Files/Sprites/Card/{name}.png"), size=(800, 800)))
             for name in ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"]
         ]
+        self.cardValues = {
+            "Ace": 11,
+            "Two": 2,
+            "Three": 3,
+            "Four": 4,
+            "Five": 5,
+            "Six": 6,
+            "Seven": 7,
+            "Eight": 8,
+            "Nine": 9,
+            "Ten": 10,
+            "Jack": 10,
+            "Queen": 10,
+            "King": 10
+        }
 
-        # Buttons
-        self.hitImg = self.cardDeck[0]  # Placeholder to load real button image
-        self.hitImg2 = self.cardDeck[1]
-        self.standImg = self.cardDeck[2]
-        self.standImg2 = self.cardDeck[3]
+        
 
         hitImg = Image.open("Culminating Files/Sprites/Button/HitButton.png")
         self.hitImg = CTkImage(hitImg, size=(600, 600))
@@ -208,22 +218,36 @@ class Play_Screen(CTkFrame):
         pywinstyles.set_opacity(standButton, 0.8, color="#000001")
 
         # Initial player cards
-        playerCard1 = CTkLabel(self, text='', image=random.choice(self.cardDeck), bg_color="#000001", fg_color="#000001", corner_radius=50)
+        card1, cardImg1=random.choice(self.cardDeck)
+        playerCard1 = CTkLabel(self, text='', image=cardImg1, bg_color="#000001", fg_color="#000001", corner_radius=50)
         playerCard1.place(x=200, y=550)
+        self.playerCards.append(card1)
         pywinstyles.set_opacity(playerCard1, 0.8, color="#000001")
-        playerCard2 = CTkLabel(self, text='', image=random.choice(self.cardDeck), bg_color="#000001", fg_color="#000001", corner_radius=50)
+        card2, cardImg2=random.choice(self.cardDeck)
+        playerCard2 = CTkLabel(self, text='', image=cardImg2, bg_color="#000001", fg_color="#000001", corner_radius=50)
         playerCard2.place(x=400, y=550)
+        self.playerCards.append(card2)
         pywinstyles.set_opacity(playerCard2, 0.8, color="#000001")
 
+        #find and print base card total
+        self.totalCardValue+=self.cardValues[card1] + self.cardValues[card2]
         # Animation function
         def image_animation(image_idle, image_press, button):
             button.configure(image=image_press)
             button.after(100, lambda: button.configure(image=image_idle))
-            if button == hitButton:
-                newCard = CTkLabel(self, text='', image=random.choice(self.cardDeck), bg_color="#000001", fg_color="#000001", corner_radius=50)
+            if self.totalCardValue > 21 and 'Ace' in self.playerCards:
+                self.totalCardValue -= 10  # Adjust for Ace if over 21
+
+            if button == hitButton and self.totalCardValue < 21:
+                card,cardImg=random.choice(self.cardDeck)
+                newCard = CTkLabel(self, text='', image=cardImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
                 newCard.place(x=self.posx, y=550)
+                self.playerCards.append(card)
                 pywinstyles.set_opacity(newCard, 0.8, color="#000001")
+
                 self.posx += 200
+                self.totalCardValue += self.cardValues[card]
+
 
 # Rest of Play_Screen (no need to change local `posx` unless making a full class state)
 
