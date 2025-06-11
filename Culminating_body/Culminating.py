@@ -223,6 +223,23 @@ class Play_Screen(CTkFrame):
                                      command=lambda: self.image_animation(self.standImg, self.standImg2, self.standButton))
         self.standButton.place(x=1150, y=325)
         pywinstyles.set_opacity(self.standButton, 0.8, color="#000001")
+        # AI photo
+        aiImg = Image.open("Culminating Files/Sprites/Dealer/Tuxedo_dealer_smile.png")
+        self.aiImg = CTkImage(aiImg, size=(300, 300))
+        self.aiLabel = CTkLabel(self, text='', image=self.aiImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
+        self.aiLabel.place(x=1500, y=0)
+        pywinstyles.set_opacity(self.aiLabel, 1, color="#000001")
+        #label for current card Value
+        self.cardValuePlayer = CTkLabel(self, text=f'you currently have: {self.totalCardValue}', font=('Sans', 30), text_color="white", bg_color="#000001", fg_color="#0F0F3A", corner_radius=20)
+        self.cardValuePlayer.place(x=50, y=900)
+        pywinstyles.set_opacity(self.cardValuePlayer, color="#000001")
+        self.cardValueAI = CTkLabel(self, text=f'AI Card Value: {self.aiCardValue}', font=('Sans', 30), text_color="white", bg_color="#000001", fg_color="#141438", corner_radius=20)
+        self.cardValueAI.place(x=1540, y=300)
+        pywinstyles.set_opacity(self.cardValueAI, color="#000001")
+        #Bust label
+        self.bustLabel = CTkLabel(self, text='', font=('Sans', 38), text_color="red", bg_color="#000001", fg_color="#000001", corner_radius=20)
+        self.bustLabel.place(x=555, y=550)
+        pywinstyles.set_opacity(self.bustLabel, color="#000001")
 
         # Initial player cards
         card1, cardImg1 = random.choice(self.cardDeck)
@@ -242,20 +259,28 @@ class Play_Screen(CTkFrame):
         self.aiCard1Label = CTkLabel(self, text='', image=self.sleeveImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
         self.aiCard1Label.place(x=200, y=0)
         pywinstyles.set_opacity(self.aiCard1Label, 1, color="#000001")
+        self.aicards.append(self.aiCard1)
 
         self.aiCard2, self.aiCardImg2 = random.choice(self.cardDeck)
         self.aiCard2Label = CTkLabel(self, text='', image=self.aiCardImg2, bg_color="#000001", fg_color="#000001", corner_radius=50)
         self.aiCard2Label.place(x=400, y=0)
         pywinstyles.set_opacity(self.aiCard2Label, 1, color="#000001")
+        self.aicards.append(self.aiCard1)
+        self.aiCardValue += self.cardValues[self.aiCard2] 
 
         self.totalCardValue += self.cardValues[card1] + self.cardValues[card2]
-
+        self.cardValuePlayer.configure(text=f'You currently have: {self.totalCardValue}')
+        self.cardValueAI.configure(text=f'AI Card Value: {self.aiCardValue}')
     def image_animation(self, image_idle, image_press, button):
         button.configure(image=image_press)
         button.after(100, lambda: button.configure(image=image_idle))
 
-        if self.totalCardValue > 21 and 'Ace' in self.playerCards:
-            self.totalCardValue -= 10  # Adjust for Ace if over 21
+        def adjust_for_ace(cards, total):
+            ace_count = cards.count("Ace")
+            while total > 21 and ace_count > 0:
+                total -= 10
+                ace_count -= 1
+            return total
 
         if button == self.hitButton and self.totalCardValue < 21:
             card, cardImg = random.choice(self.cardDeck)
@@ -266,13 +291,29 @@ class Play_Screen(CTkFrame):
 
             self.posx += 200
             self.totalCardValue += self.cardValues[card]
+            self.totalCardValue = adjust_for_ace(self.playerCards, self.totalCardValue)
+            self.cardValuePlayer.configure(text=f'You currently have: {self.totalCardValue}')
+
+            if self.totalCardValue > 21:
+                self.bustLabel.configure(text='You Busted! Returning to betting screen in 3')
+                self.hitButton.configure(state='disabled')
+                self.standButton.configure(state='disabled')
+                self.after(1000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen in 2'))
+                self.after(2000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen in 1'))
+                self.after(3000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen...'))
+                self.after(4000, lambda: (clear_screen(), Bet_Screen(app)))
 
         elif self.totalCardValue == 21 or button == self.standButton:
-            # Reveal AI card 1
             self.aiCard1Label.configure(image=self.aiCardImg1)
+
+            #Calculate initial AI value
             self.aiCardValue = self.cardValues[self.aiCard1] + self.cardValues[self.aiCard2]
+            self.aiCardValue = adjust_for_ace(self.aicards, self.aiCardValue)
+            self.cardValueAI.configure(text=f'AI Card Value: {self.aiCardValue}')
 
             while self.aiCardValue < 17:
+                self.after(1000)  # Wait between draws
+
                 aiCard, aiCardImg = random.choice(self.cardDeck)
                 newAICard = CTkLabel(self, text='', image=aiCardImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
                 newAICard.place(x=self.aiCardposx, y=0)
@@ -281,7 +322,8 @@ class Play_Screen(CTkFrame):
 
                 self.aiCardposx += 200
                 self.aiCardValue += self.cardValues[aiCard]
-                
+                self.aiCardValue = adjust_for_ace(self.aicards, self.aiCardValue)
+                self.cardValueAI.configure(text=f'AI Card Value: {self.aiCardValue}')
                 
 
 
