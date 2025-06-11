@@ -159,17 +159,20 @@ class Play_Screen(CTkFrame):
         super().__init__(master)
         self.pack(fill="both", expand=True)
         self.betAmount = betAmount
-        self.posx = 600  # Track card placement
-        self.playerCards = [] 
-        # Card Deck
+        self.posx = 600
+        self.playerCards = []
         self.totalCardValue = 0
-        # Images
+        self.aiCardposx = 600
+        self.aicards = []
+        self.aiCardValue = 0
+
+        # Load background
         img = Image.open("Culminating Files/Background/betBackground.png")
-        self.img = CTkImage(img, size=(app.winfo_screenwidth(), app.winfo_screenheight())) 
+        self.img = CTkImage(img, size=(app.winfo_screenwidth(), app.winfo_screenheight()))
         backGround = CTkLabel(self, text="", image=self.img)
         backGround.pack(fill="both", expand=True)
 
-        # Load all card images into self.cardDeck
+        # Load card deck & values
         self.cardDeck = [
             (name, CTkImage(Image.open(f"Culminating Files/Sprites/Card/{name}.png"), size=(800, 800)))
             for name in ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"]
@@ -190,8 +193,11 @@ class Play_Screen(CTkFrame):
             "King": 10
         }
 
-        
+        # Sleeve image
+        sleeveImg = Image.open("Culminating Files/Sprites/Card/cardBack.png")
+        self.sleeveImg = CTkImage(sleeveImg, size=(800, 800))
 
+        # Button images
         hitImg = Image.open("Culminating Files/Sprites/Button/HitButton.png")
         self.hitImg = CTkImage(hitImg, size=(600, 600))
         hitImg2 = Image.open("Culminating Files/Sprites/Button/HitButtonPush.png")
@@ -202,51 +208,81 @@ class Play_Screen(CTkFrame):
         self.standImg2 = CTkImage(standImg2, size=(600, 600))
 
         # Currency Label
-        Currency_Label = CTkLabel(self, text=f"Current Balance: ${Current_Currency.balance}",font=('PixelfySans', 40), text_color="white",bg_color="#000000",fg_color="#8BCF5E",width=600, height=200, corner_radius=80)
+        Currency_Label = CTkLabel(self, text=f"Current Balance: ${Current_Currency.balance}", font=('PixelfySans', 40), 
+                                  text_color="white", bg_color="#000000", fg_color="#8BCF5E", width=600, height=200, corner_radius=80)
         Currency_Label.place(x=1, y=1)
-        pywinstyles.set_opacity(Currency_Label, color="#000000")
+        pywinstyles.set_opacity(Currency_Label, 1, color="#000000")  # Added opacity=1 here
 
         # Buttons
-        hitButton = CTkButton(self, text='', image=self.hitImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False,
-                              command=lambda: image_animation(self.hitImg, self.hitImg2, hitButton))
-        hitButton.place(x=100, y=325)
-        pywinstyles.set_opacity(hitButton, 0.8, color="#000001")
+        self.hitButton = CTkButton(self, text='', image=self.hitImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False,
+                                   command=lambda: self.image_animation(self.hitImg, self.hitImg2, self.hitButton))
+        self.hitButton.place(x=100, y=325)
+        pywinstyles.set_opacity(self.hitButton, 0.8, color="#000001")
 
-        standButton = CTkButton(self, text='', image=self.standImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False,
-                                command=lambda: image_animation(self.standImg, self.standImg2, standButton))
-        standButton.place(x=1150, y=325)
-        pywinstyles.set_opacity(standButton, 0.8, color="#000001")
+        self.standButton = CTkButton(self, text='', image=self.standImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False,
+                                     command=lambda: self.image_animation(self.standImg, self.standImg2, self.standButton))
+        self.standButton.place(x=1150, y=325)
+        pywinstyles.set_opacity(self.standButton, 0.8, color="#000001")
 
         # Initial player cards
-        card1, cardImg1=random.choice(self.cardDeck)
+        card1, cardImg1 = random.choice(self.cardDeck)
         playerCard1 = CTkLabel(self, text='', image=cardImg1, bg_color="#000001", fg_color="#000001", corner_radius=50)
         playerCard1.place(x=200, y=550)
         self.playerCards.append(card1)
-        pywinstyles.set_opacity(playerCard1, 0.8, color="#000001")
-        card2, cardImg2=random.choice(self.cardDeck)
+        pywinstyles.set_opacity(playerCard1, 1, color="#000001")
+
+        card2, cardImg2 = random.choice(self.cardDeck)
         playerCard2 = CTkLabel(self, text='', image=cardImg2, bg_color="#000001", fg_color="#000001", corner_radius=50)
         playerCard2.place(x=400, y=550)
         self.playerCards.append(card2)
-        pywinstyles.set_opacity(playerCard2, 0.8, color="#000001")
+        pywinstyles.set_opacity(playerCard2, 1, color="#000001")
 
-        #find and print base card total
-        self.totalCardValue+=self.cardValues[card1] + self.cardValues[card2]
-        # Animation function
-        def image_animation(image_idle, image_press, button):
-            button.configure(image=image_press)
-            button.after(100, lambda: button.configure(image=image_idle))
-            if self.totalCardValue > 21 and 'Ace' in self.playerCards:
-                self.totalCardValue -= 10  # Adjust for Ace if over 21
+        # AI cards
+        self.aiCard1, self.aiCardImg1 = random.choice(self.cardDeck)
+        self.aiCard1Label = CTkLabel(self, text='', image=self.sleeveImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
+        self.aiCard1Label.place(x=200, y=0)
+        pywinstyles.set_opacity(self.aiCard1Label, 1, color="#000001")
 
-            if button == hitButton and self.totalCardValue < 21:
-                card,cardImg=random.choice(self.cardDeck)
-                newCard = CTkLabel(self, text='', image=cardImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
-                newCard.place(x=self.posx, y=550)
-                self.playerCards.append(card)
-                pywinstyles.set_opacity(newCard, 0.8, color="#000001")
+        self.aiCard2, self.aiCardImg2 = random.choice(self.cardDeck)
+        self.aiCard2Label = CTkLabel(self, text='', image=self.aiCardImg2, bg_color="#000001", fg_color="#000001", corner_radius=50)
+        self.aiCard2Label.place(x=400, y=0)
+        pywinstyles.set_opacity(self.aiCard2Label, 1, color="#000001")
 
-                self.posx += 200
-                self.totalCardValue += self.cardValues[card]
+        self.totalCardValue += self.cardValues[card1] + self.cardValues[card2]
+
+    def image_animation(self, image_idle, image_press, button):
+        button.configure(image=image_press)
+        button.after(100, lambda: button.configure(image=image_idle))
+
+        if self.totalCardValue > 21 and 'Ace' in self.playerCards:
+            self.totalCardValue -= 10  # Adjust for Ace if over 21
+
+        if button == self.hitButton and self.totalCardValue < 21:
+            card, cardImg = random.choice(self.cardDeck)
+            newCard = CTkLabel(self, text='', image=cardImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
+            newCard.place(x=self.posx, y=550)
+            self.playerCards.append(card)
+            pywinstyles.set_opacity(newCard, 1, color="#000001")
+
+            self.posx += 200
+            self.totalCardValue += self.cardValues[card]
+
+        elif self.totalCardValue == 21 or button == self.standButton:
+            # Reveal AI card 1
+            self.aiCard1Label.configure(image=self.aiCardImg1)
+            self.aiCardValue = self.cardValues[self.aiCard1] + self.cardValues[self.aiCard2]
+
+            while self.aiCardValue < 17:
+                aiCard, aiCardImg = random.choice(self.cardDeck)
+                newAICard = CTkLabel(self, text='', image=aiCardImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
+                newAICard.place(x=self.aiCardposx, y=0)
+                self.aicards.append(aiCard)
+                pywinstyles.set_opacity(newAICard, 1, color="#000001")
+
+                self.aiCardposx += 200
+                self.aiCardValue += self.cardValues[aiCard]
+                
+                
 
 
 # Rest of Play_Screen (no need to change local `posx` unless making a full class state)
