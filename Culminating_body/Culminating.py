@@ -30,6 +30,10 @@ class Currency():
         else:
             self.balance = 50
         return self.balance
+    def pity(self):
+        if self.balance == 0:
+            self.balance = 50
+        return self.balance 
 
 # Start Screen
 class Start_Screen(CTkFrame):
@@ -52,6 +56,10 @@ class Start_Screen(CTkFrame):
             clear_screen()
             Bet_Screen(app)
 
+        def to_shop_screen():
+            clear_screen()
+            shop_screen(app)
+
         startLabel = CTkButton(self, text='', image=self.startImg, bg_color="#000001", fg_color="#000001", hover=False, corner_radius=50, command=to_bet_screen)
         startLabel.place(x=100, y=250)
         pywinstyles.set_opacity(startLabel, 0.7, color="#000001")
@@ -60,7 +68,7 @@ class Start_Screen(CTkFrame):
         Currency_Label.place(x=1, y=1)
         pywinstyles.set_opacity(Currency_Label, color="#000001")
 
-        shopLabel = CTkButton(self, text='', image=self.shopImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False)
+        shopLabel = CTkButton(self, text='', image=self.shopImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False, command=to_shop_screen)
         shopLabel.place(x=100, y=500)
         pywinstyles.set_opacity(shopLabel, 0.7, color="#000001")
 
@@ -69,6 +77,7 @@ class Bet_Screen(CTkFrame):
         super().__init__(master)
         self.pack(fill="both", expand=True)
         self.betAmount = 0
+        Current_Currency.pity()
 
         # Background
         img = Image.open("Culminating Files/Background/betBackground.png")
@@ -96,6 +105,8 @@ class Bet_Screen(CTkFrame):
         self.button1002 = CTkImage(Image.open("Culminating Files/Sprites/Button/$100ButtonPush.png"), size=(300, 300))
         self.acceptImg = CTkImage(Image.open("Culminating Files/Sprites/Button/Idleframe.png"), size=(400, 400))
         self.acceptImg2 = CTkImage(Image.open("Culminating Files/Sprites/Button/Pressframe.png"), size=(400, 400))
+        self.backImg = CTkImage(Image.open("Culminating Files/Sprites/Button/BackButton.png"), size=(300, 300))
+        self.backImg2 = CTkImage(Image.open("Culminating Files/Sprites/Button/BackButtonPush.png"), size=(300, 300))
 
         # Button Functions
         def image_animation(image_idle, image_press, button):
@@ -120,11 +131,14 @@ class Bet_Screen(CTkFrame):
                 if self.betAmount > 0:
                     clear_screen()
                     Play_Screen(app, self.betAmount)
+            elif button == self.back:
+                    Current_Currency.add(self.betAmount)
+                    clear_screen()
+                    Start_Screen(app)
             if self.betLabel.winfo_exists():
                 self.betLabel.configure(text=f"You are currently betting: ${self.betAmount}")
             if self.currency_label.winfo_exists():
                 self.currency_label.configure(text=f"Current Balance: ${Current_Currency.balance}")
-
         # Buttons
         self.subtractbet = CTkButton(self, text='', image=self.subbetImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False, command=lambda: image_animation(self.subbetImg, self.subbetImg2, self.subtractbet))
         self.subtractbet.place(x=200, y=650)
@@ -153,6 +167,10 @@ class Bet_Screen(CTkFrame):
         self.betLabel = CTkLabel(self, text=f'You are currently betting: ${self.betAmount}', font=('Sans', 50), text_color="white", bg_color="#000001", fg_color="#000001", width=600, height=200, corner_radius=80)
         self.betLabel.place(x=650, y=400)
         pywinstyles.set_opacity(self.betLabel, color="#000001")
+
+        self.back = CTkButton(self, text='',hover=False, font=('Sans', 30), text_color="white", bg_color="#000001", fg_color="#000001",image = self.backImg, corner_radius=20, command=lambda: image_animation(self.backImg, self.backImg2, self.back))
+        self.back.place(x=1600, y=100)
+        pywinstyles.set_opacity(self.back,color='#000001')
 
 class Play_Screen(CTkFrame):
     def __init__(self, master, betAmount):
@@ -254,6 +272,19 @@ class Play_Screen(CTkFrame):
         self.playerCards.append(card2)
         pywinstyles.set_opacity(playerCard2, 1, color="#000001")
 
+
+        def adjust_for_ace(cards, total):
+            ace_count = cards.count("Ace")
+            while total > 21 and ace_count > 0:
+                total -= 10
+                ace_count -= 1
+            return total
+
+
+
+
+        self.totalCardValue = self.cardValues[card1] + self.cardValues[card2]
+        self.totalCardValue = adjust_for_ace(self.playerCards, self.totalCardValue)
         # AI cards
         self.aiCard1, self.aiCardImg1 = random.choice(self.cardDeck)
         self.aiCard1Label = CTkLabel(self, text='', image=self.sleeveImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
@@ -265,16 +296,49 @@ class Play_Screen(CTkFrame):
         self.aiCard2Label = CTkLabel(self, text='', image=self.aiCardImg2, bg_color="#000001", fg_color="#000001", corner_radius=50)
         self.aiCard2Label.place(x=400, y=0)
         pywinstyles.set_opacity(self.aiCard2Label, 1, color="#000001")
-        self.aicards.append(self.aiCard1)
+        self.aicards.append(self.aiCard2)
         self.aiCardValue += self.cardValues[self.aiCard2] 
 
-        self.totalCardValue += self.cardValues[card1] + self.cardValues[card2]
+
         self.cardValuePlayer.configure(text=f'You currently have: {self.totalCardValue}')
         self.cardValueAI.configure(text=f'AI Card Value: {self.aiCardValue}')
     def image_animation(self, image_idle, image_press, button):
         button.configure(image=image_press)
         button.after(100, lambda: button.configure(image=image_idle))
-
+        def return_betting_screen(state):
+            if state == 'bust':
+                self.bustLabel.configure(text='You Busted! Returning to betting screen in 3')
+                self.hitButton.configure(state='disabled')
+                self.standButton.configure(state='disabled')
+                self.after(1000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen in 2'))
+                self.after(2000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen in 1'))
+                self.after(3000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen...'))
+                self.after(4000, lambda: (clear_screen(), Bet_Screen(app)))
+            elif state == 'tie':
+                self.bustLabel.configure(text='You Tied! Returning to betting screen in 3')
+                self.hitButton.configure(state='disabled')
+                self.standButton.configure(state='disabled')
+                self.after(1000, lambda: self.bustLabel.configure(text='You Tied! Returning to betting screen in 2'))
+                self.after(2000, lambda: self.bustLabel.configure(text='You Tied! Returning to betting screen in 1'))
+                self.after(3000, lambda: self.bustLabel.configure(text='You Tied! Returning to betting screen...'))
+                self.after(4000, lambda: (Current_Currency.add(self.betAmount),clear_screen(), Bet_Screen(app)))
+            elif state == 'win':
+                self.bustLabel.configure(text='You Won! Returning to betting screen in 3')
+                self.hitButton.configure(state='disabled')
+                self.standButton.configure(state='disabled')
+                self.after(1000, lambda: self.bustLabel.configure(text='You Won! Returning to betting screen in 2'))
+                self.after(2000, lambda: self.bustLabel.configure(text='You Won! Returning to betting screen in 1'))
+                self.after(3000, lambda: self.bustLabel.configure(text='You Won! Returning to betting screen...'))
+                self.after(4000, lambda: (Current_Currency.add(self.betAmount * 2), clear_screen(), Bet_Screen(app)))
+            elif state == 'lose':
+                self.bustLabel.configure(text='You Lost! Returning to betting screen in 3')
+                self.hitButton.configure(state='disabled')
+                self.standButton.configure(state='disabled')
+                self.after(1000, lambda: self.bustLabel.configure(text='You Lost! Returning to betting screen in 2'))
+                self.after(2000, lambda: self.bustLabel.configure(text='You Lost! Returning to betting screen in 1'))
+                self.after(3000, lambda: self.bustLabel.configure(text='You Lost! Returning to betting screen...'))
+                self.after(4000, lambda: (clear_screen(), Bet_Screen(app)))
+            
         def adjust_for_ace(cards, total):
             ace_count = cards.count("Ace")
             while total > 21 and ace_count > 0:
@@ -295,14 +359,7 @@ class Play_Screen(CTkFrame):
             self.cardValuePlayer.configure(text=f'You currently have: {self.totalCardValue}')
 
             if self.totalCardValue > 21:
-                self.bustLabel.configure(text='You Busted! Returning to betting screen in 3')
-                self.hitButton.configure(state='disabled')
-                self.standButton.configure(state='disabled')
-                self.after(1000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen in 2'))
-                self.after(2000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen in 1'))
-                self.after(3000, lambda: self.bustLabel.configure(text='You Busted! Returning to betting screen...'))
-                self.after(4000, lambda: (clear_screen(), Bet_Screen(app)))
-
+                return_betting_screen('bust')
         elif self.totalCardValue == 21 or button == self.standButton:
             self.aiCard1Label.configure(image=self.aiCardImg1)
 
@@ -310,26 +367,46 @@ class Play_Screen(CTkFrame):
             self.aiCardValue = self.cardValues[self.aiCard1] + self.cardValues[self.aiCard2]
             self.aiCardValue = adjust_for_ace(self.aicards, self.aiCardValue)
             self.cardValueAI.configure(text=f'AI Card Value: {self.aiCardValue}')
+            def ai_draw():
+                if  self.aiCardValue < 17:
+                    self.after(1000)  
 
-            while self.aiCardValue < 17:
-                self.after(1000)  # Wait between draws
+                    aiCard, aiCardImg = random.choice(self.cardDeck)
+                    newAICard = CTkLabel(self, text='', image=aiCardImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
+                    newAICard.place(x=self.aiCardposx, y=0)
+                    self.aicards.append(aiCard)
+                    pywinstyles.set_opacity(newAICard, 1, color="#000001")
 
-                aiCard, aiCardImg = random.choice(self.cardDeck)
-                newAICard = CTkLabel(self, text='', image=aiCardImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
-                newAICard.place(x=self.aiCardposx, y=0)
-                self.aicards.append(aiCard)
-                pywinstyles.set_opacity(newAICard, 1, color="#000001")
+                    self.aiCardposx += 200
+                    self.aiCardValue += self.cardValues[aiCard]
+                    self.aiCardValue = adjust_for_ace(self.aicards, self.aiCardValue)
+                    self.cardValueAI.configure(text=f'AI Card Value: {self.aiCardValue}')
+                    self.after(1000,ai_draw)
+                else:
+                    if self.aiCardValue > 21:
+                        return_betting_screen('win')
+                    elif self.aiCardValue < self.totalCardValue:
+                        return_betting_screen('win')
+                    elif self.aiCardValue > self.totalCardValue:
+                        return_betting_screen('lose')
+                    elif self.aiCardValue == self.totalCardValue:
+                        return_betting_screen('tie')
+            self.after(1000, ai_draw)
+class shop_screen(CTkFrame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.pack(fill="both", expand=True)
+        #Background
+        img = Image.open("Culminating Files/Background/shopBackground.jpg")
+        self.img = CTkImage(img, size=(app.winfo_screenwidth(), app.winfo_screenheight()))
+        backGround = CTkLabel(self, text="", image=self.img)
+        backGround.pack(fill="both", expand=True)
+        #first purchasable pack
+        aquaticFrame=CTkFrame()
 
-                self.aiCardposx += 200
-                self.aiCardValue += self.cardValues[aiCard]
-                self.aiCardValue = adjust_for_ace(self.aicards, self.aiCardValue)
-                self.cardValueAI.configure(text=f'AI Card Value: {self.aiCardValue}')
-                
 
 
-# Rest of Play_Screen (no need to change local `posx` unless making a full class state)
 
-# Initialize game
 if __name__ == "__main__":
     y = 1
     if y == 1:
