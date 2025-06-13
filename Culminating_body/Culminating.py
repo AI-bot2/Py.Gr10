@@ -3,9 +3,12 @@ from customtkinter import *
 from PIL import Image
 import random
 
+
 app = CTk()
 app.attributes("-fullscreen", True)
 set_appearance_mode("system")
+Aquatic_Pack = False
+Aquatic_Purchased = False
 
 def clear_screen():
     for widget in app.winfo_children():
@@ -17,7 +20,7 @@ class Currency():
         self.balance = balance
 
     def start_balance(self):
-        self.balance += 1000
+        self.balance += 2000
         return self.balance
 
     def add(self, amount):
@@ -191,10 +194,16 @@ class Play_Screen(CTkFrame):
         backGround.pack(fill="both", expand=True)
 
         # Load card deck & values
-        self.cardDeck = [
-            (name, CTkImage(Image.open(f"Culminating Files/Sprites/Card/{name}.png"), size=(800, 800)))
-            for name in ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"]
-        ]
+        if not Aquatic_Pack:
+            self.cardDeck = [
+                (name, CTkImage(Image.open(f"Culminating Files/Sprites/Card/{name}.png"), size=(800, 800)))
+                for name in ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"]
+            ]
+        else:
+            self.cardDeck = [
+                (name, CTkImage(Image.open(f"Culminating Files/Sprites/Card/fish{name}.png"), size=(800, 800)))
+                for name in ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King"]
+            ]
         self.cardValues = {
             "Ace": 11,
             "Two": 2,
@@ -402,11 +411,66 @@ class shop_screen(CTkFrame):
         backGround = CTkLabel(self, text="", image=self.img)
         backGround.pack(fill="both", expand=True)
         #first purchasable pack
-        aquaticFrame=CTkFrame()
-
-
-
-
+        aquaticFrame=CTkFrame(self, bg_color="#000001", fg_color="#000001", corner_radius=50,border_color="#4343D1", border_width=7,width=400, height=800)
+        aquaticFrame.place(x=100, y=100)
+        pywinstyles.set_opacity(aquaticFrame, color="#000001")
+        aquaticLabel = CTkLabel(aquaticFrame, text="Aquatic Pack", font=('PixelfySans', 37), text_color="white", bg_color="#000001", fg_color="#4343D1", width=375, height=100, corner_radius=50)
+        aquaticLabel.place(x=12, y=30)
+        aquaticDealerImg= Image.open("Culminating Files/Sprites/Dealer/fishDealer.png")
+        self.aquaticDealerImg = CTkImage(aquaticDealerImg, size=(300, 300))
+        aquaticCardImg = Image.open("Culminating Files/Sprites/Card/AquaticCard.png")
+        self.aquaticCardImg = CTkImage(aquaticCardImg, size=(300, 300))
+        aquaticDealerLabel = CTkLabel(aquaticFrame, text='', image=self.aquaticDealerImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
+        aquaticDealerLabel.place(x=50, y=150)
+        pywinstyles.set_opacity(aquaticDealerLabel, color="#000001")
+        aquaticCardLabel = CTkLabel(aquaticFrame, text='', image=self.aquaticCardImg, bg_color="#000001", fg_color="#000001", corner_radius=50)
+        aquaticCardLabel.place(x=0, y=300)
+        pywinstyles.set_opacity(aquaticCardLabel, color="#000001")
+        if Aquatic_Purchased:
+            aquaticPriceLabel = CTkLabel(aquaticFrame, text="Price: Purchased", font=('PixelfySans', 30), text_color="white", bg_color="#000001", fg_color="#5B5BD8", width=375, height=100, corner_radius=50)
+            aquaticPriceLabel.place(x=12, y=500)
+        else:
+            aquaticPriceLabel = CTkLabel(aquaticFrame, text="Price: $2000", font=('PixelfySans', 30), text_color="white", bg_color="#000001", fg_color="#5B5BD8", width=375, height=100, corner_radius=50)
+            aquaticPriceLabel.place(x=12, y=500)
+        pywinstyles.set_opacity(aquaticPriceLabel, color="#000001")
+        def equipAquatic():
+            global Aquatic_Pack
+            if aquaticButton.cget("text") == "Purchased!":
+                Aquatic_Pack=True
+                equipAqauatic.configure(text="Equipped!", text_color="#8BCF5E")
+            elif Aquatic_Pack:
+                equipAqauatic.configure(text="Equip", text_color="white", font=('PixelfySans', 30))
+                Aquatic_Pack = False
+            else:
+                aquaticLabel.configure(text="purchase pack first!", text_color="red", font=('PixelfySans', 30))
+                self.after(2000, lambda: aquaticLabel.configure(text="Aquatic Pack", text_color="white"))
+        def buyAquaticPack():
+            if Current_Currency.balance >= 2000:
+                Current_Currency.subtract(2000)
+                aquaticButton.configure(text="Purchased!", text_color="#8BCF5E")
+                aquaticPriceLabel.configure(text="Price: Purchased", text_color="#8BCF5E")
+                global Aquatic_Purchased
+                Aquatic_Purchased = True
+            else:
+                aquaticLabel.configure(text="Not enough money!", text_color="red", font=('PixelfySans', 30))
+                self.after(2000, lambda: aquaticLabel.configure(text="Aquatic Pack", text_color="white"))
+        if Aquatic_Purchased:
+            aquaticButton = CTkButton(aquaticFrame, text="Purchased!", font=('PixelfySans', 30), text_color="#8BCF5E", bg_color="#000001", fg_color="#4343D1", width=100, height=100, corner_radius=50, command=equipAquatic)
+            aquaticButton.place(x=100, y=650)
+        else:
+            aquaticButton = CTkButton(aquaticFrame, text="Buy", font=('PixelfySans', 30), text_color="white", bg_color="#000001", fg_color="#4343D1", width=100, height=100, corner_radius=50, command=buyAquaticPack)
+            aquaticButton.place(x=100, y=650)
+        if Aquatic_Pack:
+            equipAqauatic = CTkButton(self, text="Equipped!", font=('PixelfySans', 30), text_color="#8BCF5E", bg_color="#000001", fg_color="#4343D1", width=100, height=100, corner_radius=50, command=equipAquatic)
+        else:
+            equipAqauatic= CTkButton(self, text="Equip", font=('PixelfySans', 30), text_color="white", bg_color="#000001", fg_color="#4343D1", width=100, height=100, corner_radius=50, command=equipAquatic)
+        equipAqauatic.place(x=180, y=930)
+        pywinstyles.set_opacity(equipAqauatic, color="#000001")
+        backbuttonImg = Image.open("Culminating Files/Sprites/Button/BackButton.png")
+        self.backbuttonImg = CTkImage(backbuttonImg, size=(300, 300))
+        backbutton=CTkButton(self, text='', image=self.backbuttonImg, bg_color="#000001", fg_color="#000001", corner_radius=50, hover=False, command=lambda: (clear_screen(), Start_Screen(app)))
+        backbutton.place(x=1600, y=100)
+        pywinstyles.set_opacity(backbutton, 0.8, color="#000001")
 if __name__ == "__main__":
     y = 1
     if y == 1:
